@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="mb-6 md:mb-0">
             <a href="#home" className="text-xl font-bold">
-              <span className="text-turquoise">Data</span>Engineer
+              <span className="text-turquoise">Youssef</span> Ahmed
             </a>
             <p className="text-muted-foreground mt-2 text-sm">
               Turning complex data into actionable insights
@@ -32,7 +32,7 @@ const Footer = () => {
             </div>
             
             <p className="text-sm text-muted-foreground">
-              &copy; {currentYear} Data Engineer. All rights reserved.
+              &copy; {currentYear} Youssef Ahmed. All rights reserved.
             </p>
           </div>
         </div>

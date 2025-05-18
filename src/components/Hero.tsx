@@ -7,12 +7,13 @@ const Hero = () => {
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(0,194,194,0.05)_0%,rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(circle_at_center,rgba(0,194,194,0.08)_0%,rgba(0,0,0,0)_70%)]"></div>
       <div className="container-width">
         <div className="max-w-3xl animate-fade-in">
+          <p className="text-lg text-turquoise font-medium mb-3">Hi, I'm Youssef Ahmed</p>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-8">
             Turning Complex Data <br />
             Into <span className="text-turquoise">Actionable Insights</span>
           </h1>
           <p className="text-xl sm:text-2xl text-muted-foreground mb-10 max-w-2xl">
-            Senior Data Engineer specializing in building scalable data platforms and pipelines that drive business decisions.
+            Senior Data Engineer @ Software House specializing in building scalable data platforms and pipelines that drive business decisions.
           </p>
           <div className="flex flex-wrap gap-4">
             <a href="#projects" className="button-primary">
