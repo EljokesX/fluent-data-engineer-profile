@@ -15,9 +15,9 @@ const About = () => {
             </div>
           </div>
           <div className="md:col-span-7">
-            <h3 className="text-2xl font-semibold mb-5">Data Engineer @ Lovable AI</h3>
+            <h3 className="text-2xl font-semibold mb-5">Data Engineer @ Software House</h3>
             <p className="text-muted-foreground mb-6">
-              With over 8 years of experience building data-intensive applications, I specialize in designing and implementing scalable, reliable data platforms and pipelines that turn raw data into valuable business insights.
+              With over 3 years of experience building data-intensive applications, I specialize in designing and implementing scalable, reliable data platforms and pipelines that turn raw data into valuable business insights.
             </p>
             
             <div className="space-y-6">
@@ -31,7 +31,7 @@ const About = () => {
               <div>
                 <h4 className="font-semibold mb-2">Education</h4>
                 <p className="text-muted-foreground">
-                  MSc in Computer Science with specialization in Data Engineering and Analytics, Stanford University. BSc in Computer Engineering, MIT.
+                  MSc in Computer Science with specialization in Data Engineering and Analytics, MNU University. BSc in Computer Engineering, MIT.
                 </p>
               </div>
               
