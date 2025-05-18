@@ -31,7 +31,7 @@ const About = () => {
               <div>
                 <h4 className="font-semibold mb-2">Education</h4>
                 <p className="text-muted-foreground">
-                  MSc in Computer Science with specialization in Data Engineering and Analytics, MNU University. BSc in Computer Engineering, MIT.
+                  MSc in data Science with specialization in Data Engineering and Analytics, MNU University. BSc in Computer Engineering, MIT.
                 </p>
               </div>
               
