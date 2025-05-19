@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Session, User } from "@supabase/supabase-js";
+import { Session, User, Provider } from "@supabase/supabase-js";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +11,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithProvider: (provider: Provider) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -81,6 +82,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!userError && userData) {
             setIsAdmin(userData.role === 'admin');
           }
+          
+          // For new OAuth users, check if a profile exists. If not, create one
+          if (event === 'SIGNED_IN') {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', newSession.user.id)
+              .single();
+            
+            if (profileError && profileError.code === 'PGRST116') {
+              // Profile doesn't exist, create one
+              const { error: insertError } = await supabase
+                .from('profiles')
+                .insert([
+                  { 
+                    id: newSession.user.id,
+                    email: newSession.user.email,
+                    role: 'guest',  // Default role for OAuth users is guest
+                  }
+                ]);
+                
+              if (insertError) {
+                console.error("Error creating profile for OAuth user:", insertError);
+                toast.error("Failed to create user profile");
+              } else {
+                console.log("Created new profile for OAuth user");
+                setIsAdmin(false); // New OAuth users are guests by default
+              }
+            }
+          }
         } catch (error) {
           console.error("Error checking user role:", error);
         }
@@ -128,6 +159,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Error signing in:", error);
       toast.error("An error occurred during sign in");
+    }
+  };
+
+  const signInWithProvider = async (provider: Provider) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (!data.url) {
+        toast.error("Failed to start OAuth flow");
+        return;
+      }
+
+      // Redirect the user to the provider's OAuth flow
+      window.location.href = data.url;
+    } catch (error) {
+      console.error("Error signing in with OAuth provider:", error);
+      toast.error("An error occurred during OAuth sign in");
     }
   };
 
@@ -208,6 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin,
     isLoading,
     signIn,
+    signInWithProvider,
     signUp,
     signOut,
     resetPassword,
