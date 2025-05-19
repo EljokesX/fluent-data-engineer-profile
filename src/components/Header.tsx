@@ -1,11 +1,15 @@
 
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Menu, X, LogIn } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { user, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,7 +60,36 @@ const Header = () => {
               </li>
             ))}
           </ul>
-          <ThemeToggle />
+          
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            
+            {user ? (
+              <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Link to="/admin">
+                    <Button variant="outline" size="sm">
+                      Admin Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => signOut()}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth/signin">
+                <Button variant="outline" size="sm" className="flex gap-2 items-center">
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </Button>
+              </Link>
+            )}
+          </div>
         </nav>
 
         {/* Mobile Menu Button */}
@@ -87,6 +120,43 @@ const Header = () => {
                 </a>
               </li>
             ))}
+            
+            {user ? (
+              <>
+                {isAdmin && (
+                  <li>
+                    <Link
+                      to="/admin"
+                      className="block py-3 font-medium hover:text-turquoise transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </li>
+                )}
+                <li>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setIsMenuOpen(false);
+                    }}
+                    className="block py-3 font-medium hover:text-turquoise transition-colors w-full text-left"
+                  >
+                    Sign Out
+                  </button>
+                </li>
+              </>
+            ) : (
+              <li>
+                <Link
+                  to="/auth/signin"
+                  className="block py-3 font-medium hover:text-turquoise transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       )}

@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -16,19 +17,34 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([
+          { 
+            name: formData.name,
+            email: formData.email,
+            message: formData.message
+          }
+        ]);
+        
+      if (error) throw error;
+      
       setSubmitStatus("success");
       setFormData({ name: "", email: "", message: "" });
       
       // Reset success message after 5 seconds
       setTimeout(() => setSubmitStatus(null), 5000);
-    }, 1500);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
