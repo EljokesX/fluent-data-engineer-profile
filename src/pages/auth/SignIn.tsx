@@ -1,3 +1,4 @@
+
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -52,12 +53,13 @@ const SignIn = () => {
           <Alert variant="destructive" className="mt-4">
             <AlertTitle>Configuration Error</AlertTitle>
             <AlertDescription>
-              <p className="mb-2">Please check your environment variables and ensure they are set correctly:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>VITE_SUPABASE_URL</li>
-                <li>VITE_SUPABASE_ANON_KEY</li>
-              </ul>
-              <p className="mt-2">These can be found in your Supabase dashboard under Project Settings &gt; API.</p>
+              <p className="mb-2">To set up Supabase in Lovable:</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Click on the green Supabase button in the top right of the interface</li>
+                <li>Connect to your Supabase project or create a new one</li>
+                <li>Your environment variables will be automatically configured</li>
+              </ol>
+              <p className="mt-2">Once connected, you'll need to enable Google and GitHub OAuth providers in your Supabase dashboard.</p>
             </AlertDescription>
           </Alert>
         </div>

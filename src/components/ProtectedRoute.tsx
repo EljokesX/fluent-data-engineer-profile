@@ -25,18 +25,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           <h2 className="text-2xl font-bold mb-4">Authentication Not Configured</h2>
           <div className="mb-6 p-4 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 rounded-md">
             <p>Supabase authentication is not configured properly.</p>
-            <p className="mt-2">Please add your Supabase credentials to the environment variables.</p>
           </div>
           <p className="text-muted-foreground text-sm">
-            To set up Supabase:
+            To set up Supabase in Lovable:
           </p>
           <ol className="text-left list-decimal pl-6 mt-2 space-y-2">
-            <li>Go to Supabase dashboard</li>
-            <li>Select your project</li>
-            <li>Go to Project Settings &gt; API</li>
-            <li>Copy the URL and anon key</li>
-            <li>Create a .env file in the root of your project</li>
-            <li>Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY variables</li>
+            <li>Click on the green Supabase button in the top right of the interface</li>
+            <li>Connect to your Supabase project or create a new one</li>
+            <li>Your environment variables will be automatically configured</li>
+            <li>Enable OAuth providers in your Supabase dashboard</li>
           </ol>
         </div>
       </div>
