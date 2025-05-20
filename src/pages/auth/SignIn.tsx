@@ -1,4 +1,3 @@
-
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -10,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/contexts/AuthContext";
 import { Github, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -19,7 +20,8 @@ const signInSchema = z.object({
 type SignInValues = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
-  const { signIn, signInWithProvider } = useAuth();
+  const { signIn, signInWithProvider, error } = useAuth();
+  const supabaseConfigured = isSupabaseConfigured();
   const form = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -35,6 +37,33 @@ const SignIn = () => {
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     await signInWithProvider(provider);
   };
+
+  if (!supabaseConfigured) {
+    return (
+      <div className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold">Authentication Setup Required</h1>
+            <p className="mt-2 text-muted-foreground">
+              Supabase authentication is not properly configured
+            </p>
+          </div>
+          
+          <Alert variant="destructive" className="mt-4">
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">Please check your environment variables and ensure they are set correctly:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>VITE_SUPABASE_URL</li>
+                <li>VITE_SUPABASE_ANON_KEY</li>
+              </ul>
+              <p className="mt-2">These can be found in your Supabase dashboard under Project Settings &gt; API.</p>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12">

@@ -1,7 +1,7 @@
-
 import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -15,8 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, isAdmin, isLoading } = useAuth();
   
   // Check if Supabase is configured
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseConfigured = !!supabaseUrl;
+  const supabaseConfigured = isSupabaseConfigured();
 
   // If Supabase is not configured, show a helpful message
   if (!supabaseConfigured) {
@@ -29,8 +28,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             <p className="mt-2">Please add your Supabase credentials to the environment variables.</p>
           </div>
           <p className="text-muted-foreground text-sm">
-            See the README.md file for setup instructions.
+            To set up Supabase:
           </p>
+          <ol className="text-left list-decimal pl-6 mt-2 space-y-2">
+            <li>Go to Supabase dashboard</li>
+            <li>Select your project</li>
+            <li>Go to Project Settings &gt; API</li>
+            <li>Copy the URL and anon key</li>
+            <li>Create a .env file in the root of your project</li>
+            <li>Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY variables</li>
+          </ol>
         </div>
       </div>
     );

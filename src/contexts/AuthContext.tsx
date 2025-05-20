@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Session, User, Provider } from "@supabase/supabase-js";
 import { toast } from "@/components/ui/sonner";
 import { useNavigate } from "react-router-dom";
@@ -26,14 +26,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [supabaseConfigured, setSupabaseConfigured] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for valid Supabase URL - if not present, skip auth
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) {
-      console.warn("No Supabase URL found - running with disabled authentication");
+    // Check if Supabase is properly configured
+    const supabaseConfig = isSupabaseConfigured();
+    setSupabaseConfigured(supabaseConfig);
+    
+    if (!supabaseConfig) {
       setIsLoading(false);
+      setError("Supabase is not properly configured. Please check your environment variables.");
+      toast.error("Authentication configuration error. Please check console for details.");
+      console.error("Supabase is not configured properly. Check your environment variables.");
       return;
     }
     
@@ -311,6 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
     resetPassword,
+    supabaseConfigured,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
