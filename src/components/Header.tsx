@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, LogIn } from "lucide-react";
+import { Menu, X, LogIn, User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,12 @@ const Header = () => {
             
             {user ? (
               <div className="flex items-center gap-3">
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm" className="flex gap-2 items-center">
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Button>
+                </Link>
                 {isAdmin && (
                   <Link to="/admin">
                     <Button variant="outline" size="sm">
@@ -123,6 +129,15 @@ const Header = () => {
             
             {user ? (
               <>
+                <li>
+                  <Link
+                    to="/profile"
+                    className="block py-3 font-medium hover:text-turquoise transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                </li>
                 {isAdmin && (
                   <li>
                     <Link

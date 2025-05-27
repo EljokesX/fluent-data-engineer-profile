@@ -10,6 +10,7 @@ import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import UserProfile from "./pages/UserProfile";
 import Dashboard from "./pages/admin/Dashboard";
 import ProjectsList from "./pages/admin/projects/ProjectsList";
 import ProjectForm from "./pages/admin/projects/ProjectForm";
@@ -37,6 +38,13 @@ const App = () => (
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+
+            {/* User Routes */}
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
 
             {/* Admin Routes */}
             <Route path="/admin" element={
