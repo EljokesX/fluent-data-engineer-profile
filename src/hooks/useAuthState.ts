@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
 export function useAuthState() {
@@ -10,27 +10,37 @@ export function useAuthState() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [supabaseConfigured, setSupabaseConfigured] = useState(false);
+  const [supabaseConfigured, setSupabaseConfigured] = useState(true);
 
   useEffect(() => {
-    // Check if Supabase is properly configured
-    const supabaseConfig = isSupabaseConfigured();
-    setSupabaseConfigured(supabaseConfig);
-    
-    if (!supabaseConfig) {
-      setIsLoading(false);
-      setError("Supabase is not properly configured. Please check your environment variables.");
-      toast.error("Authentication configuration error. Please check console for details.");
-      console.error("Supabase is not configured properly. Check your environment variables.");
-      return;
-    }
-    
-    // Check active session
-    const setupAuth = async () => {
-      setIsLoading(true);
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.email);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        setError(null);
+        
+        if (newSession?.user) {
+          // Check admin role and ensure profile exists
+          const adminStatus = await checkUserRole(newSession.user.id);
+          setIsAdmin(adminStatus);
+          
+          if (event === 'SIGNED_IN') {
+            await ensureUserProfile(newSession.user);
+          }
+        } else {
+          setIsAdmin(false);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Check current session
+    const checkSession = async () => {
       try {
-        // Get the current session
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error("Session error:", sessionError);
@@ -39,47 +49,26 @@ export function useAuthState() {
           return;
         }
         
-        if (data.session) {
-          setSession(data.session);
-          setUser(data.session.user);
-          
-          // Check if user is admin by getting their roles
-          await checkUserRole(data.session.user.id);
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          const adminStatus = await checkUserRole(currentSession.user.id);
+          setIsAdmin(adminStatus);
         }
         
-        // Set up auth state change listener
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          async (event, newSession) => {
-            setSession(newSession);
-            setUser(newSession?.user ?? null);
-            setError(null); // Reset any previous errors on auth state change
-            
-            if (newSession?.user) {
-              await checkUserRole(newSession.user.id);
-              
-              if (event === 'SIGNED_IN') {
-                // For new OAuth users, check if a profile exists. If not, create one
-                await ensureUserProfile(newSession.user);
-              }
-            } else {
-              setIsAdmin(false);
-            }
-          }
-        );
-        
         setIsLoading(false);
-        
-        return () => {
-          authListener?.subscription.unsubscribe();
-        };
       } catch (err) {
         console.error("Auth setup error:", err);
         setError(err instanceof Error ? err.message : "Unknown authentication error");
         setIsLoading(false);
       }
     };
-    
-    setupAuth();
+
+    checkSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return {
@@ -108,10 +97,7 @@ export const checkUserRole = async (userId: string) => {
       return false;
     }
     
-    if (userData) {
-      return userData.role === 'admin';
-    }
-    return false;
+    return userData?.role === 'admin';
   } catch (error) {
     console.error("Error in checkUserRole:", error);
     return false;
@@ -126,9 +112,14 @@ export const ensureUserProfile = async (user: User) => {
       .from('profiles')
       .select('id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     
-    if (profileError && profileError.code === 'PGRST116') {
+    if (profileError) {
+      console.error("Error checking profile:", profileError);
+      return false;
+    }
+
+    if (!profileData) {
       // Profile doesn't exist, create one
       const { error: insertError } = await supabase
         .from('profiles')
@@ -136,16 +127,16 @@ export const ensureUserProfile = async (user: User) => {
           { 
             id: user.id,
             email: user.email,
-            role: 'guest',  // Default role for OAuth users is guest
+            role: 'guest',
           }
         ]);
         
       if (insertError) {
-        console.error("Error creating profile for OAuth user:", insertError);
+        console.error("Error creating profile:", insertError);
         toast.error("Failed to create user profile");
         return false;
       } else {
-        console.log("Created new profile for OAuth user");
+        console.log("Created new profile for user");
         return true;
       }
     }

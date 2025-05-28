@@ -1,6 +1,6 @@
 
 import { toast } from "@/components/ui/sonner";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Provider, User } from "@supabase/supabase-js";
 import { checkUserRole, ensureUserProfile } from "@/hooks/useAuthState";
 
@@ -59,15 +59,6 @@ export const signInWithProvider = async (
       return false;
     }
 
-    if (!data.url) {
-      const message = "Failed to start OAuth flow";
-      setError(message);
-      toast.error(message);
-      return false;
-    }
-
-    // Redirect the user to the provider's OAuth flow
-    window.location.href = data.url;
     return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : "An error occurred during OAuth sign in";
@@ -99,24 +90,12 @@ export const signUp = async (
       return false;
     }
 
-    // Create profile with default guest role
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          { 
-            id: data.user.id,
-            email: data.user.email,
-            role: 'guest',
-          }
-        ]);
-        
-      if (profileError) {
-        console.error("Error creating profile:", profileError);
-      }
+    if (data.user && !data.session) {
+      toast.success("Verification email sent! Please check your inbox.");
+    } else if (data.session) {
+      toast.success("Account created successfully!");
     }
-
-    toast.success("Verification email sent! Please check your inbox.");
+    
     return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : "An error occurred during sign up";

@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { Github, Mail } from "lucide-react";
+import { Github } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,7 +20,6 @@ type SignInValues = z.infer<typeof signInSchema>;
 
 const SignIn = () => {
   const { signIn, signInWithProvider, error } = useAuth();
-  const supabaseConfigured = isSupabaseConfigured();
   const form = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -38,34 +35,6 @@ const SignIn = () => {
   const handleOAuthSignIn = async (provider: 'google' | 'github') => {
     await signInWithProvider(provider);
   };
-
-  if (!supabaseConfigured) {
-    return (
-      <div className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Authentication Setup Required</h1>
-            <p className="mt-2 text-muted-foreground">
-              Supabase authentication is not properly configured
-            </p>
-          </div>
-          
-          <Alert variant="destructive" className="mt-4">
-            <AlertTitle>Configuration Error</AlertTitle>
-            <AlertDescription>
-              <p className="mb-2">To set up Supabase in Lovable:</p>
-              <ol className="list-decimal pl-5 space-y-1">
-                <li>Click on the green Supabase button in the top right of the interface</li>
-                <li>Connect to your Supabase project or create a new one</li>
-                <li>Your environment variables will be automatically configured</li>
-              </ol>
-              <p className="mt-2">Once connected, you'll need to enable Google and GitHub OAuth providers in your Supabase dashboard.</p>
-            </AlertDescription>
-          </Alert>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-[calc(100vh-80px)] items-center justify-center px-4 py-12">
@@ -173,6 +142,12 @@ const SignIn = () => {
             >
               {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
             </Button>
+            
+            {error && (
+              <div className="text-sm text-red-600 text-center">
+                {error}
+              </div>
+            )}
           </form>
         </Form>
 

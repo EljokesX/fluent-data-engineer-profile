@@ -9,7 +9,96 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: number
+          message: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: number
+          message: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: number
+          message?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          role?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          github_url: string | null
+          id: number
+          image: string | null
+          live_url: string | null
+          tech_stack: string[] | null
+          title: string
+          updated_at: string
+          year: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          github_url?: string | null
+          id?: number
+          image?: string | null
+          live_url?: string | null
+          tech_stack?: string[] | null
+          title: string
+          updated_at?: string
+          year: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          github_url?: string | null
+          id?: number
+          image?: string | null
+          live_url?: string | null
+          tech_stack?: string[] | null
+          title?: string
+          updated_at?: string
+          year?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

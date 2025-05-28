@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash, Plus, Eye } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
@@ -134,12 +134,6 @@ const ProjectsList = () => {
                         <Trash className="h-4 w-4 text-destructive" />
                         <span className="sr-only">Delete</span>
                       </Button>
-                      <Link to={`/projects/${project.id}`} target="_blank">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                          <span className="sr-only">View</span>
-                        </Button>
-                      </Link>
                     </div>
                   </td>
                 </tr>
