@@ -1,204 +1,146 @@
 
-import React from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "@/components/ui/sonner";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
-
-const profileSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-});
-
-type ProfileFormData = z.infer<typeof profileSchema>;
+import { toast } from "@/components/ui/sonner";
 
 const UserProfile = () => {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [email, setEmail] = useState("");
 
-  const form = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      email: user?.email || "",
-      firstName: "",
-      lastName: "",
-    },
-  });
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      setEmail(user.email || "");
+    }
+  }, [user]);
 
-  React.useEffect(() => {
-    const loadProfile = async () => {
-      if (user) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('id', user.id)
-            .single();
-
-          if (data) {
-            form.setValue('firstName', data.first_name || '');
-            form.setValue('lastName', data.last_name || '');
-          }
-        } catch (error) {
-          console.error('Error loading profile:', error);
-        }
-      }
-    };
-
-    loadProfile();
-  }, [user, form]);
-
-  const onSubmit = async (data: ProfileFormData) => {
+  const fetchProfile = async () => {
     if (!user) return;
 
-    setIsLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          email: data.email,
-          first_name: data.firstName,
-          last_name: data.lastName,
-        });
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-      if (error) {
-        toast.error('Failed to update profile');
-        console.error('Profile update error:', error);
-      } else {
-        toast.success('Profile updated successfully!');
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to load profile');
+        return;
       }
+
+      setProfile(data);
     } catch (error) {
-      toast.error('An error occurred while updating profile');
-      console.error('Profile update error:', error);
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  if (!user) {
+  const updateProfile = async () => {
+    if (!user) return;
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          email: email,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Profile updated successfully');
+      fetchProfile();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-6 text-center">
-            <p>Please sign in to view your profile.</p>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto max-w-2xl py-20 px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-turquoise mx-auto"></div>
+          <p className="mt-4">Loading profile...</p>
+        </div>
       </div>
     );
   }
 
-  const userInitials = `${form.watch('firstName')?.[0] || ''}${form.watch('lastName')?.[0] || ''}`.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U';
-
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-2xl">
+    <div className="container mx-auto max-w-2xl py-20 px-4">
+      <div className="space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">User Profile</h1>
+          <p className="text-muted-foreground mt-2">Manage your account settings</p>
+        </div>
+
         <Card>
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={user.user_metadata?.avatar_url} />
-                <AvatarFallback className="text-lg font-semibold">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <CardTitle className="text-2xl">User Profile</CardTitle>
-            <CardDescription>
-              Manage your account information and preferences
-            </CardDescription>
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
           </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Account Details */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Account Details
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">User ID</p>
-                  <p className="text-sm font-mono">{user.id}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Created</p>
-                  <p className="text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Email Confirmed</p>
-                  <p className="text-sm">{user.email_confirmed_at ? 'Yes' : 'No'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Last Sign In</p>
-                  <p className="text-sm">{user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}</p>
-                </div>
-              </div>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Your email address"
+              />
             </div>
 
-            {/* Profile Form */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Input
+                value={profile?.role || 'guest'}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Member Since</Label>
+              <Input
+                value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown'}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={updateProfile} 
+                disabled={updating}
+                className="flex-1"
+              >
+                {updating ? "Updating..." : "Update Profile"}
+              </Button>
               
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" disabled />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter your first name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter your last name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" disabled={isLoading} className="w-full">
-                    {isLoading ? "Updating..." : "Update Profile"}
-                  </Button>
-                </form>
-              </Form>
+              <Button 
+                variant="outline" 
+                onClick={signOut}
+                className="flex-1"
+              >
+                Sign Out
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -1,36 +1,36 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { z } from "zod";
+import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/ui/sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { categories } from "@/lib/projectsData";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/lib/supabase";
 
 const projectSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
   category: z.string().min(1, "Category is required"),
-  year: z.string().min(4, "Year is required"),
-  image: z.string().url("Image must be a valid URL"),
-  technologies: z.string().min(1, "At least one technology is required"),
-  demoUrl: z.string().url("Demo URL must be a valid URL").optional().or(z.literal("")),
-  githubUrl: z.string().url("GitHub URL must be a valid URL").optional().or(z.literal("")),
+  year: z.string().min(1, "Year is required"),
+  image: z.string().url().optional().or(z.literal("")),
+  tech_stack: z.string().optional(),
+  github_url: z.string().url().optional().or(z.literal("")),
+  live_url: z.string().url().optional().or(z.literal("")),
 });
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
 
 const ProjectForm = () => {
-  const { id } = useParams();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditing = Boolean(id);
   const [loading, setLoading] = useState(false);
-  const isEditMode = !!id;
-  
+
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
@@ -39,115 +39,128 @@ const ProjectForm = () => {
       category: "",
       year: new Date().getFullYear().toString(),
       image: "",
-      technologies: "",
-      demoUrl: "",
-      githubUrl: "",
+      tech_stack: "",
+      github_url: "",
+      live_url: "",
     },
   });
 
   useEffect(() => {
-    if (isEditMode) {
-      fetchProject(parseInt(id));
+    if (isEditing && id) {
+      loadProject();
     }
-  }, [id, isEditMode]);
+  }, [id, isEditing]);
 
-  const fetchProject = async (projectId: number) => {
+  const loadProject = async () => {
+    if (!id) return;
+    
+    setLoading(true);
     try {
-      setLoading(true);
       const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("id", projectId)
+        .from('projects')
+        .select('*')
+        .eq('id', parseInt(id))
         .single();
 
       if (error) throw error;
-      
+
       if (data) {
-        // Convert technologies array to comma-separated string for form
-        const techString = Array.isArray(data.technologies) 
-          ? data.technologies.join(", ") 
-          : data.technologies;
-          
         form.reset({
           title: data.title,
-          description: data.description,
+          description: data.description || "",
           category: data.category,
           year: data.year,
-          image: data.image,
-          technologies: techString,
-          demoUrl: data.demoUrl || "",
-          githubUrl: data.githubUrl || "",
+          image: data.image || "",
+          tech_stack: data.tech_stack ? data.tech_stack.join(", ") : "",
+          github_url: data.github_url || "",
+          live_url: data.live_url || "",
         });
       }
     } catch (error) {
-      console.error("Error fetching project:", error);
-      toast.error("Failed to load project");
-      navigate("/admin/projects");
+      console.error('Error loading project:', error);
+      toast.error('Failed to load project');
+      navigate('/admin/projects');
     } finally {
       setLoading(false);
     }
   };
 
   const onSubmit = async (values: ProjectFormValues) => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      
-      // Convert technologies string to array
-      const technologiesArray = values.technologies
-        .split(",")
-        .map(tech => tech.trim())
-        .filter(tech => tech !== "");
-      
+      const techStackArray = values.tech_stack 
+        ? values.tech_stack.split(",").map(tech => tech.trim()).filter(Boolean)
+        : [];
+
       const projectData = {
         title: values.title,
-        description: values.description,
+        description: values.description || null,
         category: values.category,
         year: values.year,
-        image: values.image,
-        technologies: technologiesArray,
-        demoUrl: values.demoUrl || null,
-        githubUrl: values.githubUrl || null,
+        image: values.image || null,
+        tech_stack: techStackArray,
+        github_url: values.github_url || null,
+        live_url: values.live_url || null,
+        updated_at: new Date().toISOString(),
       };
-      
-      if (isEditMode) {
+
+      if (isEditing && id) {
         const { error } = await supabase
-          .from("projects")
+          .from('projects')
           .update(projectData)
-          .eq("id", id);
-          
+          .eq('id', parseInt(id));
+
         if (error) throw error;
-        toast.success("Project updated successfully");
+        toast.success('Project updated successfully');
       } else {
         const { error } = await supabase
-          .from("projects")
+          .from('projects')
           .insert([projectData]);
-          
+
         if (error) throw error;
-        toast.success("Project created successfully");
+        toast.success('Project created successfully');
       }
-      
-      navigate("/admin/projects");
+
+      navigate('/admin/projects');
     } catch (error) {
-      console.error("Error saving project:", error);
-      toast.error(isEditMode ? "Failed to update project" : "Failed to create project");
+      console.error('Error saving project:', error);
+      toast.error('Failed to save project');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">
-        {isEditMode ? "Edit Project" : "New Project"}
-      </h1>
-      
-      {loading && isEditMode ? (
-        <div className="text-center py-12">
+  if (loading && isEditing) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-turquoise mx-auto"></div>
           <p className="mt-4">Loading project...</p>
         </div>
-      ) : (
-        <div className="bg-card border border-border rounded-lg p-6">
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">
+          {isEditing ? 'Edit Project' : 'Add New Project'}
+        </h1>
+        <Button 
+          variant="outline" 
+          onClick={() => navigate('/admin/projects')}
+        >
+          Back to Projects
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Project Details</CardTitle>
+        </CardHeader>
+        <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -156,157 +169,145 @@ const ProjectForm = () => {
                   name="title"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title*</FormLabel>
+                      <FormLabel>Title *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Project Title" {...field} />
+                        <Input {...field} placeholder="Project title" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category*</FormLabel>
-                        <FormControl>
-                          <select
-                            className="w-full px-3 py-2 rounded-md border border-input bg-background"
-                            {...field}
-                          >
-                            <option value="">Select Category</option>
-                            {categories.map((category) => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year*</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="2023" 
-                            type="number"
-                            min="2000"
-                            max={new Date().getFullYear() + 1}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Web Development, Mobile App" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="year"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Year *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="2024" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image URL</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="https://example.com/image.jpg" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description*</FormLabel>
+                    <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe your project..." 
-                        rows={6}
                         {...field} 
+                        placeholder="Project description..."
+                        rows={4}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
-                name="image"
+                name="tech_stack"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Image URL*</FormLabel>
+                    <FormLabel>Tech Stack</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/image.jpg" {...field} />
+                      <Input 
+                        {...field} 
+                        placeholder="React, TypeScript, Tailwind CSS (comma separated)"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
-              <FormField
-                control={form.control}
-                name="technologies"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Technologies* (comma separated)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="React, TypeScript, Tailwind CSS" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="demoUrl"
+                  name="live_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Demo URL (optional)</FormLabel>
+                      <FormLabel>Live Demo URL</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://demo.example.com" {...field} />
+                        <Input {...field} placeholder="https://your-demo.com" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
-                  name="githubUrl"
+                  name="github_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>GitHub URL (optional)</FormLabel>
+                      <FormLabel>GitHub URL</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://github.com/username/repo" {...field} />
+                        <Input {...field} placeholder="https://github.com/username/repo" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              
-              <div className="flex justify-end gap-4 pt-4">
-                <Button
+
+              <div className="flex gap-4">
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? "Saving..." : (isEditing ? "Update Project" : "Create Project")}
+                </Button>
+                
+                <Button 
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/admin/projects")}
+                  onClick={() => navigate('/admin/projects')}
+                  className="flex-1"
                 >
                   Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : isEditMode ? "Update Project" : "Create Project"}
                 </Button>
               </div>
             </form>
           </Form>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
