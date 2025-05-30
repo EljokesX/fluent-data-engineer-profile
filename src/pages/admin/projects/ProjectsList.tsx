@@ -3,7 +3,9 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash, Plus, Eye } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash, Plus, ExternalLink, Github } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 type Project = {
@@ -12,6 +14,10 @@ type Project = {
   category: string;
   year: string;
   image: string;
+  description: string;
+  tech_stack: string[];
+  github_url: string;
+  live_url: string;
   created_at: string;
 };
 
@@ -64,82 +70,117 @@ const ProjectsList = () => {
     return (
       <div className="text-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-turquoise mx-auto"></div>
-        <p className="mt-4">Loading projects...</p>
+        <p className="mt-4 text-gray-600">Loading projects...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Projects</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+          <p className="text-gray-600 mt-1">Manage your portfolio projects</p>
+        </div>
         <Link to="/admin/projects/new">
-          <Button className="gap-2">
+          <Button className="gap-2 bg-turquoise hover:bg-turquoise/90">
             <Plus className="h-4 w-4" />
-            <span>New Project</span>
+            New Project
           </Button>
         </Link>
       </div>
 
       {projects.length === 0 ? (
-        <div className="bg-card border border-border rounded-lg p-12 text-center">
-          <p className="text-lg mb-4">No projects found</p>
-          <Link to="/admin/projects/new">
-            <Button>Create your first project</Button>
-          </Link>
-        </div>
+        <Card className="border-0 shadow-sm">
+          <CardContent className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+            <p className="text-gray-600 mb-6">Create your first project to get started</p>
+            <Link to="/admin/projects/new">
+              <Button className="bg-turquoise hover:bg-turquoise/90">Create Project</Button>
+            </Link>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-4 py-3 text-left">Image</th>
-                <th className="px-4 py-3 text-left">Title</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Year</th>
-                <th className="px-4 py-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((project) => (
-                <tr 
-                  key={project.id}
-                  className="border-b border-border hover:bg-muted/50"
-                >
-                  <td className="px-4 py-3">
-                    {project.image && (
-                      <img
-                        src={project.image}
-                        alt={project.title}
-                        className="h-12 w-20 object-cover rounded"
-                      />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <Card key={project.id} className="border-0 shadow-sm hover:shadow-md transition-shadow group">
+              {project.image && (
+                <div className="aspect-video overflow-hidden rounded-t-lg">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant="secondary" className="text-xs">{project.category}</Badge>
+                  <span className="text-xs text-gray-500">{project.year}</span>
+                </div>
+                <CardTitle className="text-lg group-hover:text-turquoise transition-colors">
+                  {project.title}
+                </CardTitle>
+                {project.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2">{project.description}</p>
+                )}
+              </CardHeader>
+              <CardContent>
+                {project.tech_stack && project.tech_stack.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-4">
+                    {project.tech_stack.slice(0, 3).map((tech: string, index: number) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tech}
+                      </Badge>
+                    ))}
+                    {project.tech_stack.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{project.tech_stack.length - 3}
+                      </Badge>
                     )}
-                  </td>
-                  <td className="px-4 py-3 font-medium">{project.title}</td>
-                  <td className="px-4 py-3">{project.category}</td>
-                  <td className="px-4 py-3">{project.year}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center gap-2">
-                      <Link to={`/admin/projects/${project.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteProject(project.id)}
-                      >
-                        <Trash className="h-4 w-4 text-destructive" />
-                        <span className="sr-only">Delete</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    {project.live_url && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <a href={project.live_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
                       </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    )}
+                    {project.github_url && (
+                      <Button variant="ghost" size="sm" asChild>
+                        <a href={project.github_url} target="_blank" rel="noopener noreferrer">
+                          <Github className="w-3 h-3" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-1">
+                    <Link to={`/admin/projects/${project.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteProject(project.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
